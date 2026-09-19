@@ -4,6 +4,22 @@
 
 > 本项目为独立开源社区项目，**与** 汽水音乐 / EDIFIER **无官方关联**。请自行确认本机软件与硬件的使用合规性。
 
+![PixelLyrics Dashboard](docs/screenshots/dashboard.png)
+
+*Dashboard 实机界面：汽水直读中，Halo 已连接，歌词实时同步。*
+
+## 适配设备
+
+| 类别 | 适配项 | 说明 |
+|---|---|---|
+| **显示设备（已适配）** | EDIFIER Halo PixelBar（花再） | USB HID；VID `0x2D99` / PID `0xA106`，interface `4`，usage page `0xFF14`，usage `1` |
+| **歌词来源（已适配）** | 汽水音乐（Windows 桌面版） | 需安装并**保持「桌面歌词」开启**；通过本地 asar 注入 + `127.0.0.1:19228` 直读，不 OCR |
+| **系统** | Windows 10 / 11 x64 | 开发需 Node.js 20+ |
+| **暂未适配** | 其他 EDIFIER 音箱 / PixelBar 版本 | 设备过滤刻意收紧，仅识别上述 VID/PID/接口组合 |
+| **暂未适配** | LX Music / 网易云等其他播放器 | 当前生产路径只做汽水桌面歌词直读 + MediaSession 曲目信息 |
+
+HID 写入与协议实现以本机已验证的 Halo PixelBar 为准；换用其他设备前请先确认协议兼容性。
+
 ## 功能
 
 - 汽水音乐桌面歌词 **本地直读**（asar 注入 + `127.0.0.1:19228` 桥，不 OCR）
@@ -22,7 +38,7 @@
 | 汽水音乐 | 已安装；**桌面歌词功能保持开启**（不要关闭该功能） |
 | Halo | EDIFIER Halo PixelBar（花再），USB 数据线连接 |
 
-HID 过滤：VID `0x2D99` / PID `0xA106`，interface `4`，usage page `0xFF14`，usage `1`。
+详细设备型号与协议参数见上文「适配设备」。
 
 ## 快速开始
 
