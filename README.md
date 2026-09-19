@@ -171,6 +171,10 @@ npm.cmd run diagnose:track-switch
 - 修改第三方 asar 存在升级失效风险；汽水升级后可能需重新安装注入。  
 - 使用本软件即表示理解：HID 与本地桥接操作需在合法授权范围内进行。
 
+## 开发工具
+
+开发工具：ChatGPT（架构与任务规划）· Xiaomi MiMo（编码、调试与文档落地）
+
 ## License
 
 MIT — 见 [LICENSE](LICENSE)。
