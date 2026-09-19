@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.pixellyrics-data/
+*.log
+.DS_Store

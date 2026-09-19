@@ -1,0 +1,2 @@
+项目名称: PixelLyrics,目标是在 Windows 11上获取汽水音乐实时歌词,并把当前歌词发送到漫步者花在 Halo PixelBar设备显示。现在 refs 目录下有两个参考项目, refs/watch-heart-desktop 用于研究汽水音乐实时歌词获取方式,重点看 desktopLyrics.asar 歌词捕获逻辑、通信方式, refs/halo-pixelbar-mcp 用于研究 Halo PixelBar 的 USB HID 通信,文字发送协议、数据包格式、编码方式。这两个项目都只是参考,不要直接修改,PixelLyrics 自己的代码全部放到 app 目录。第一阶段只做技术分析,不要修改任何代码,完整阅读两个参考项目后输出一份技术评估,回答以下问题:watch-heart-desktop 到底如何获取汽水音乐实时歌词、用到哪些关键文件和函数、halo-pixelbar-mcp 如何发现和连接设备、HID 参数和发送文字的具体实现、最小可复用代码有哪些,如何抽取到 PixelLyrics,并给出 PixelLyrics 推荐技术栈、架构设计、目录结构和 MVP 开发步骤,所有结论必须基于真实源码,如果发现本文件描述与源码不符,以源码为准,并指出错误。
+

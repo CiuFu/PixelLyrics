@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self'; script-src 'self'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PixelLyrics</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="bg-orb bg-orb-a" aria-hidden="true"></div>
+    <div class="bg-orb bg-orb-b" aria-hidden="true"></div>
+
+    <main class="app">
+      <header class="topbar glass">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">
+            <div class="logo-halo"></div>
+            <div class="logo-pixel-grid">
+              <span></span><span></span><span></span>
+              <span></span><span></span><span></span>
+              <span></span><span></span><span></span>
+            </div>
+            <div class="logo-note">♪</div>
+          </div>
+          <div class="brand-text">
+            <div class="brand-name">PixelLyrics</div>
+            <div class="brand-sub">实时歌词同步中心</div>
+          </div>
+        </div>
+        <div class="run-badge" id="run-badge">
+          <span class="run-dot" id="run-dot"></span>
+          <span id="run-label">运行中</span>
+        </div>
+      </header>
+
+      <section class="hero glass hero-glow" id="hero-card" data-state="idle">
+        <div class="hero-meta">
+          <span class="eyebrow" id="display-status">就绪</span>
+          <div class="track-line">
+            <div class="track-title" id="track-title">正在播放</div>
+            <div class="track-artist" id="track-artist">等待歌曲信息</div>
+          </div>
+        </div>
+
+        <div class="lyric-stage" id="lyric-stage">
+          <div class="idle-state" id="idle-state">
+            <div class="idle-icon" aria-hidden="true">
+              <span class="idle-note">♪</span>
+              <span class="idle-ring"></span>
+            </div>
+            <div class="idle-title">等待音乐播放</div>
+            <div class="idle-desc">打开汽水音乐并开启桌面歌词后，歌词会出现在这里</div>
+          </div>
+          <div class="playing-state hidden" id="playing-state">
+            <div class="lyric-caption">当前歌词</div>
+            <div class="lyric-text" id="current-lyric"></div>
+          </div>
+        </div>
+
+        <div class="hero-foot">
+          <span id="soda-run-hint"></span>
+        </div>
+      </section>
+
+      <section class="grid">
+        <article class="card glass">
+          <h2 class="card-title">设备状态</h2>
+          <ul class="status-list">
+            <li class="status-item">
+              <span class="status-icon" id="halo-icon" data-tone="ok">◉</span>
+              <div class="status-body">
+                <div class="status-name">Halo PixelBar</div>
+                <div class="status-value" id="halo-status">检测中…</div>
+              </div>
+              <span class="status-pill" id="halo-pill">…</span>
+            </li>
+            <li class="status-item">
+              <span class="status-icon" id="soda-icon" data-tone="ok">♫</span>
+              <div class="status-body">
+                <div class="status-name">汽水音乐</div>
+                <div class="status-value" id="soda-status">检测中…</div>
+              </div>
+              <span class="status-pill" id="soda-pill">…</span>
+            </li>
+            <li class="status-item">
+              <span class="status-icon" id="sync-icon" data-tone="ok">⟳</span>
+              <div class="status-body">
+                <div class="status-name">同步</div>
+                <div class="status-value" id="sync-status">等待数据</div>
+              </div>
+              <span class="status-pill" id="sync-pill">…</span>
+            </li>
+          </ul>
+        </article>
+
+        <article class="card glass">
+          <h2 class="card-title">最近同步</h2>
+          <div class="recent-block">
+            <div class="recent-label">最近播放</div>
+            <div class="recent-track" id="recent-track">暂无记录</div>
+            <div class="recent-meta">
+              <span class="recent-status" id="recent-status">等待第一句歌词</span>
+            </div>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-copy">
+              <div class="toggle-name">桌面歌词隐藏</div>
+              <div class="toggle-desc">保护桌面纯净</div>
+            </div>
+            <label class="switch">
+              <input id="hide-desktop-lyrics" type="checkbox" />
+              <span class="switch-ui" aria-hidden="true"></span>
+              <span class="switch-label" id="hide-lyrics-state">ON</span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle-copy">
+              <div class="toggle-name">歌词同步</div>
+              <div class="toggle-desc">与花在保持一致</div>
+            </div>
+            <div class="switch switch-static">
+              <span class="switch-ui on" aria-hidden="true"></span>
+              <span class="switch-label" id="lyrics-sync-state">ON</span>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="actions glass">
+        <div class="action-col">
+          <button id="reconnect-halo" type="button" class="btn btn-secondary">
+            重新连接 Halo
+          </button>
+        </div>
+        <div class="action-col">
+          <button id="quit-app" type="button" class="btn btn-danger">
+            退出 PixelLyrics
+          </button>
+          <div class="action-note">关闭窗口也会确认退出，并还原花在显示</div>
+        </div>
+      </section>
+
+      <p class="error-line" id="error-line"></p>
+    </main>
+
+    <div class="modal-root hidden" id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+      <div class="modal-backdrop" id="confirm-backdrop"></div>
+      <div class="modal-panel glass">
+        <div class="modal-icon" aria-hidden="true">♪</div>
+        <h2 class="modal-title" id="confirm-title">退出 PixelLyrics</h2>
+        <p class="modal-message" id="confirm-message">关闭应用程序将会还原花在的显示模式</p>
+        <p class="modal-detail" id="confirm-detail">
+          确认后将停止歌词同步，并恢复 Halo 接管前的显示。
+        </p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="confirm-cancel">取消</button>
+          <button type="button" class="btn btn-danger" id="confirm-ok">退出并还原</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>

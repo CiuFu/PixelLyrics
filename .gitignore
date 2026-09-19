@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+out/
+.pixellyrics-data/
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.local
+app/node_modules/
+app/dist/
+refs/

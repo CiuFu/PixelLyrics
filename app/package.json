@@ -1,0 +1,94 @@
+{
+  "name": "pixellyrics",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Windows: SodaMusic live lyrics on EDIFIER Halo PixelBar (unofficial community project).",
+  "main": "src/main.js",
+  "author": "PixelLyrics",
+  "license": "MIT",
+  "keywords": [
+    "electron",
+    "lyrics",
+    "halo-pixelbar",
+    "sodamusic",
+    "hid"
+  ],
+  "scripts": {
+    "start": "electron .",
+    "start:utf8": "chcp 65001 >NUL & electron .",
+    "build": "electron-builder --win",
+    "dist": "electron-builder --win nsis portable",
+    "test:halo-packets": "node tests/test_halo_packets.js",
+    "test:halo-device": "node tests/test_halo_device.js",
+    "test:soda-bridge": "node tests/test_soda_bridge.js",
+    "test:lyrics": "node tests/test_lyric_pipeline.js",
+    "test:lyric-policy": "node tests/test_lyric_send_policy.js",
+    "test:display-strategy": "node tests/test_display_strategy.js",
+    "test:halo-reconnect": "node tests/test_halo_reconnect.js",
+    "test:halo-ownership": "node tests/test_halo_ownership.js",
+    "test:app-lifecycle": "node tests/test_app_lifecycle.js",
+    "test:song-state": "node tests/test_song_state.js",
+    "diagnose:track-switch": "node tests/diagnose_track_switch.js",
+    "diagnose:halo-scroll": "node tests/diagnose_halo_scroll.js",
+    "experiment:halo-ec": "node tests/test_halo_ec_protocol.js"
+  },
+  "dependencies": {
+    "@electron/asar": "^4.0.1",
+    "node-hid": "^3.1.2",
+    "windows-media-sessions": "^1.0.3"
+  },
+  "devDependencies": {
+    "electron": "^42.5.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.pixellyrics.app",
+    "productName": "PixelLyrics",
+    "copyright": "Copyright © PixelLyrics",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "**/node_modules/windows-media-sessions/**",
+      "**/node_modules/node-hid/**",
+      "**/node_modules/node-addon-api/**",
+      "**/node_modules/bindings/**",
+      "**/node_modules/file-uri-to-path/**",
+      "**/node_modules/pkg-prebuilds/**"
+    ],
+    "npmRebuild": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "artifactName": "PixelLyrics-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "PixelLyrics-portable-${version}.exe"
+    }
+  }
+}
