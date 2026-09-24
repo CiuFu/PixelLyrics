@@ -57,7 +57,7 @@ class SongStateManager {
     };
   }
 
-  // Track change on Halo: briefly show "title - artist" (center). Never ♪.
+  // Short track labels center; long title/artist pairs use DisplayStrategy's ticker.
   async showPlaceholder(reason = 'track-changed') {
     const displayText = formatTrackDisplay(this.currentTrack, '');
     const trackInfo = this.getTrackInfo();
@@ -95,10 +95,8 @@ class SongStateManager {
     }
 
     try {
-      // Center layout — no scroll, no ♪. New lyric overwrites this line.
-      const result = await this.haloClient.sendText(displayText, {
-        layout: 'center'
-      });
+      // Let DisplayStrategy choose center or scrolling based on the full label.
+      const result = await this.haloClient.sendText(displayText);
       this.onStatus(`切歌：花在显示「${displayText}」`);
       return {
         action: 'track-info',
@@ -106,7 +104,7 @@ class SongStateManager {
         text: displayText,
         result,
         skippedDevice: false,
-        layout: 'center'
+        layout: result?.mode || 'center'
       };
     } catch (error) {
       const message = error && error.message ? error.message : String(error);
