@@ -22,7 +22,7 @@
 | 问题 | 处理 |
 |---|---|
 | 未连接 / 等待设备 | 检查 USB 数据线；应用约 2s 自动扫描重连 |
-| 歌词只显示前半 | 设备单包约 16 字限制；长句由循环窗口分帧显示 |
+| 歌词只显示前半 | 文本帧有 UTF-8 字节上限；布局约按 32 个半角单位（约 16 个中文字符）分窗，英文通常按完整单词推进 |
 | 切歌后显示旧歌词 | 确认 MediaSession 有新曲目；日志应有 `track-changed` / `track-info` |
 | 退出后仍显示歌词 | 用 **退出 PixelLyrics** 或窗口 X **确认退出**；强杀进程可能来不及还原 |
 | 希望恢复原显示 | 真退出会还原接管前 scene；采集失败时回退时钟 |
@@ -42,7 +42,7 @@ npm.cmd run test:halo-reconnect
 ```text
 [soda] payload:
 [pipeline] lyric received
-[ticker] offset=
+[ticker] 1/窗口数 text=
 [halo] connected / reconnect success
 [halo-ownership] releasing / restore scene
 ```

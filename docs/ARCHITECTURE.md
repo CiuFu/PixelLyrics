@@ -42,7 +42,7 @@
 | 媒体会话 | `app/src/media/media-session-monitor.js` | `trackKey`（id+artist+title） |
 | 切歌状态 | `app/src/media/song-state-manager.js` | 切歌清理、track-info 上屏 |
 | 歌词管线 | `app/src/pipeline/lyric-pipeline.js` | 同句去重、事件 `lyric-updated`/`track-info` |
-| 显示策略 | `app/src/halo/display-strategy.js` | 长句 **循环 center 窗口**（16 字） |
+| 显示策略 | `app/src/halo/display-strategy.js` | 按显示宽度分窗；英文按完整单词滚动，超长单词按字素推进 |
 | HID 协议 | `app/src/halo/packets.js` | ED 帧 `2E AA ED`、`0xE8`/`0xEF`/scene |
 | HID 设备 | `app/src/halo/device.js` | 枚举、写包、重连、`0xEE` 采集 |
 | 控制权 | `app/src/halo/ownership.js` | idle/active/releasing；退出还原 scene |
@@ -53,7 +53,7 @@
 1. **汽水桌面歌词功能必须保持开启**；只可 CSS 隐藏视觉，不可关闭该功能（否则无 payload）。  
 2. **bridge token** 与 Electron `userData` 一致（应用配置目录，不入库）。  
 3. **asar 主路径** 优先 `Packages/<latestVersion>/desktopLyrics.asar`（汽水小包更新）。  
-4. **Halo 单包文本** ≤ **16 字 / 48 UTF-8 字节**（协议安全截断）；长句由 DisplayStrategy 分窗，不依赖设备滚动。  
+4. **Halo 文本帧**最多携带 48 UTF-8 字节；布局另按约 32 个半角显示单位（约 16 个中文字符）分窗，长句由 DisplayStrategy 软件 ticker 发送，不依赖设备滚动。
 5. **UI 歌词** 只消费 Pipeline 事件；`track-info` 不得当作歌词行。  
 6. **切歌**：Halo 先显示「歌名 - 歌手」（center），无 `♪`；新歌词覆盖。  
 7. **退出**：窗口 X / UI 退出 → 主题确认 → `HaloOwnership.release()` → 还原接管前 scene（未知则 clock fallback）。  
@@ -73,8 +73,8 @@ checksum: sum(bytes from 0xAA) & 0xFF
 
 ## 显示策略（当前生产）
 
-- 短句（≤15 字）：**center** 单包。  
-- 长句：**循环文本窗口**，`cycleSep` 为半角空格，窗口 **16 字**、不以空格开头、避免连续空格。  
+- 短句在可视宽度内时：**center** 单帧。
+- 长句：按可视宽度构造循环窗口；英文优先在单词边界推进，单个超长词按字素推进，中文及其他宽字符按字素推进。
 - 同句心跳 **不** 重发；新句取消旧 ticker 后启动新循环。  
 - 设备滚动 marquee 在本机 PixelBar 上存在相位问题，**默认不启用** 装置滚动。
 
