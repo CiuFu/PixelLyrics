@@ -1,12 +1,14 @@
 // Soda bridge lyric -> Halo PixelBar pipeline (M4.5/M4.6 display strategy).
 // Dedupe/time-window stay here. Layout vs center vs scroll is delegated to
-// DisplayStrategy (haloClient.sendText) — protocol packets unchanged.
+// DisplayStrategy (haloClient.sendText) — protocol packet format unchanged.
 'use strict';
+
+const { normalizeLyricText } = require('../halo/lyrics-layout');
 
 const DEFAULT_DEDUPE_WINDOW_MS = 2000;
 
 function normalizeKey(text) {
-  return String(text || '').replace(/\s+/g, ' ').trim();
+  return normalizeLyricText(text);
 }
 
 class LyricPipeline {
@@ -103,7 +105,7 @@ class LyricPipeline {
     return this.publishTrackInfo(text, track);
   }
 
-  // Delegate to DisplayStrategy: center for short/track, scroll for long.
+  // Delegate layout and page timing to DisplayStrategy.
   async sendFullDisplay(text, meta = {}) {
     const options = {};
     if (meta.reason) options.reason = meta.reason;
@@ -185,21 +187,26 @@ class LyricPipeline {
       this.sentCount += 1;
       this.lastError = '';
       const mode = result && result.mode ? result.mode : undefined;
-      const chunkCount = result && result.chunkCount ? result.chunkCount : 1;
+      const windowCount = result && Number.isInteger(result.windowCount)
+        ? result.windowCount
+        : 1;
+      const windows = result && Array.isArray(result.windows) && result.windows.length
+        ? result.windows
+        : [text];
       const lineLabel =
         lineIndex != null && lineCount != null
           ? ` [${lineIndex + 1}/${lineCount}]`
           : '';
       this.onStatus(
-        `已上屏：${text}${lineLabel}${chunkCount > 1 ? ` (${chunkCount}页)` : ''}`
+        `已上屏：${text}${lineLabel}${windowCount > 1 ? ` (${windowCount}窗口)` : ''}`
       );
       this.onSent({
         text,
         fullText: (result && result.fullText) || text,
         result,
         mode,
-        chunkCount,
-        chunks: (result && result.chunks) || [text],
+        windowCount,
+        windows,
         lineIndex,
         lineCount,
         trackEpoch: this.trackEpoch,
@@ -219,8 +226,8 @@ class LyricPipeline {
         fullText: (result && result.fullText) || text,
         result,
         mode,
-        chunkCount,
-        chunks: (result && result.chunks) || [text],
+        windowCount,
+        windows,
         lineIndex,
         lineCount,
         trackEpoch: this.trackEpoch,

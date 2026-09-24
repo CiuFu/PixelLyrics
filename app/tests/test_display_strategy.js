@@ -1,33 +1,36 @@
-// loopSeparator = single space; windows never start with space.
 'use strict';
 
 const assert = require('node:assert/strict');
 const path = require('node:path');
 
-const {
-  buildCycleUnit,
-  cyclicWindowAt,
-  previewCyclicFrames,
-  DisplayStrategy,
-  charLength,
-  DEFAULT_CYCLE_SEP
-} = require(path.join(__dirname, '..', 'src', 'halo', 'display-strategy'));
-
-const LONG = '原来你把永远只当成一次兴起的慷慨';
-const LONG_INNER = '原来你把永远 只当成一次兴起的慷慨';
+const { DisplayStrategy } = require(path.join(__dirname, '..', 'src', 'halo', 'display-strategy'));
+const { displayWidth } = require(path.join(__dirname, '..', 'src', 'halo', 'lyrics-layout'));
 
 function createHaloMock() {
-  const packets = [];
+  const texts = [];
   return {
-    packets,
+    texts,
     sendPacket(buf) {
       const packet = Buffer.from(buf);
       if (packet[3] !== 0xe8) return { success: true };
-      const len = packet[7];
-      packets.push(packet.subarray(8, 8 + len).toString('utf8'));
+      const payloadLength = packet[7];
+      texts.push(packet.subarray(8, 8 + payloadLength).toString('utf8'));
       return { success: true };
     }
   };
+}
+
+function makeDisplay(halo, options = {}) {
+  return new DisplayStrategy({
+    haloClient: halo,
+    windowHoldMs: 1,
+    centerLayoutDelayMs: 0,
+    maxWindows: 4,
+    onTicker: () => {},
+    onStatus: () => {},
+    sleep: async () => {},
+    ...options
+  });
 }
 
 let passed = 0;
@@ -46,71 +49,90 @@ async function test(name, fn) {
 }
 
 async function main() {
-  await test('DEFAULT_CYCLE_SEP is single half-width space', () => {
-    assert.equal(DEFAULT_CYCLE_SEP, ' ');
+  await test('15 CJK characters stay centered on one screen', async () => {
+    const halo = createHaloMock();
+    const display = makeDisplay(halo);
+    const text = '春'.repeat(15);
+    const result = await display.sendText(text);
+    assert.equal(result.mode, 'center');
+    assert.equal(result.windowCount, 1);
+    assert.deepEqual(halo.texts, [text]);
   });
 
-  await test('buildCycleUnit adds one connector space; keeps lyric spaces', () => {
-    const u = buildCycleUnit(LONG, ' ');
-    assert.equal(u.connector, ' ');
-    assert.equal(u.sepLength, 1);
-    assert.equal(u.unitText, LONG + ' ');
-    const u2 = buildCycleUnit(LONG_INNER, ' ');
-    assert.ok(u2.unitText.includes('永远 只'));
-    assert.equal(u2.unitText, LONG_INNER + ' ');
+  await test('16 CJK characters restore the original ticker threshold', async () => {
+    const halo = createHaloMock();
+    const display = makeDisplay(halo);
+    const result = await display.sendText('一二三四五六七八九十甲乙丙丁戊己');
+    assert.equal(result.mode, 'cyclic');
+    assert.equal(result.windowCount, 16);
+    assert.equal(halo.texts.length, 4);
   });
 
-  await test('windows: no leading space, no stacked spaces, still 16 chars', () => {
-    const frames = previewCyclicFrames(LONG, 20, 16, ' ');
-    for (const f of frames) {
-      assert.ok(Array.from(f).length > 0);
-      assert.ok(Array.from(f)[0] !== ' ', `leading space in ${JSON.stringify(f)}`);
-      assert.ok(!/ {2,}/.test(f), `stacked spaces in ${JSON.stringify(f)}`);
-      // Device-facing window should still be full width when cycle is long enough
-      assert.ok(Array.from(f).length <= 16);
-    }
-    const { cycle } = buildCycleUnit(LONG, ' ');
-    const seam = cyclicWindowAt(cycle, Array.from(LONG).length, 16);
-    assert.ok(Array.from(seam)[0] !== ' ', JSON.stringify(seam));
-  });
-
-  await test('semantic single space kept inside window', () => {
-    const { cycle } = buildCycleUnit(LONG_INNER, ' ');
-    let found = false;
-    for (let o = 0; o < cycle.length; o += 1) {
-      const w = cyclicWindowAt(cycle, o, 16);
-      if (w.includes('永远 只')) {
-        found = true;
-        assert.ok(Array.from(w)[0] !== ' ');
-        assert.ok(!/ {2,}/.test(w), JSON.stringify(w));
-      }
-    }
-    assert.ok(found);
-  });
-
-  await test('ticker uses cycleSep space; frames avoid leading space', async () => {
+  await test('long CJK restores one-grapheme overlapping software ticker', async () => {
     const halo = createHaloMock();
     const logs = [];
-    const display = new DisplayStrategy({
-      haloClient: halo,
-      windowHoldMs: 1,
-      resetDelayMs: 0,
-      centerLayoutDelayMs: 0,
-      maxFrames: 6,
-      cycleSep: ' ',
-      onTicker: (p) => logs.push(p),
-      onStatus: () => {},
-      sleep: async () => {}
+    const display = makeDisplay(halo, { onTicker: (payload) => logs.push(payload) });
+    const text = '一二三四五六七八九十甲乙丙丁戊己庚辛壬癸';
+    const result = await display.sendText(text);
+    assert.equal(result.mode, 'cyclic');
+    assert.equal(halo.texts.length, 4);
+    assert.equal(halo.texts[0], Array.from(text).slice(0, 16).join(''));
+    assert.equal(halo.texts[1], Array.from(text).slice(1, 17).join(''));
+    assert.equal(logs[1].windowIndex, 1);
+    assert.ok(halo.texts.every((window) => displayWidth(window) <= 32));
+  });
+
+  await test('spaces in Chinese lyrics do not turn scrolling into phrase paging', async () => {
+    const halo = createHaloMock();
+    const display = makeDisplay(halo);
+    const result = await display.sendText('我站在冰冷的水中 等一个不会来的人回来');
+    assert.equal(result.mode, 'cyclic');
+    assert.ok(result.windowCount > 2);
+    assert.ok(halo.texts[0].startsWith('我站'));
+    assert.ok(halo.texts[1].startsWith('站在'));
+  });
+
+  await test('English ticker advances by complete words', async () => {
+    const halo = createHaloMock();
+    const display = makeDisplay(halo);
+    const result = await display.sendText("I don't wanna say goodbye to you tonight");
+    assert.equal(result.mode, 'cyclic');
+    assert.equal(halo.texts[0], "I don't wanna say goodbye to you");
+    assert.ok(halo.texts[1].startsWith("don't "));
+    assert.ok(halo.texts.every((window) => displayWidth(window) <= 32));
+    assert.ok(halo.texts.every((window) => !window.includes('\n') && !window.includes('\r')));
+  });
+
+  await test('same long lyric heartbeat does not restart ticker', async () => {
+    const halo = createHaloMock();
+    let release;
+    const blocked = new Promise((resolve) => { release = resolve; });
+    const display = makeDisplay(halo, {
+      maxWindows: 1,
+      sleep: async () => blocked
     });
-    assert.equal(display.cycleSep, ' ');
-    await display.sendText(LONG);
-    const cyc = logs.filter((p) => p.mode === 'cyclic');
-    assert.ok(cyc.length >= 3);
-    for (const p of cyc) {
-      assert.ok(Array.from(p.text)[0] !== ' ', JSON.stringify(p));
-      assert.ok(!/ {2,}/.test(p.text), JSON.stringify(p.text));
-      assert.ok(charLength(p.text) <= 16);
-    }
+    const pending = display.sendText('春'.repeat(20));
+    const duplicate = await display.sendText('春'.repeat(20));
+    assert.equal(duplicate.alreadyRunning, true);
+    release();
+    await pending;
+  });
+
+  await test('new lyric cancels the old ticker sequence', async () => {
+    const halo = createHaloMock();
+    let release;
+    const blocked = new Promise((resolve) => { release = resolve; });
+    const display = makeDisplay(halo, {
+      maxWindows: 2,
+      sleep: async () => blocked
+    });
+    const oldLyric = display.sendText('春'.repeat(20));
+    const newLyric = display.sendText('新的歌词');
+    release();
+    const [oldResult, newResult] = await Promise.all([oldLyric, newLyric]);
+    assert.equal(oldResult.cancelled, true);
+    assert.equal(newResult.mode, 'center');
+    assert.ok(halo.texts.includes('新的歌词'));
   });
 
   console.log('');
@@ -118,7 +140,7 @@ async function main() {
   if (failures.length) process.exitCode = 1;
 }
 
-main().catch((e) => {
-  console.error(e);
+main().catch((error) => {
+  console.error(error);
   process.exitCode = 1;
 });

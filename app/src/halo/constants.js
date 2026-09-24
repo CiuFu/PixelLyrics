@@ -32,8 +32,15 @@ const LAYOUTS = {
   scroll_right_to_left: [1, 1]
 };
 
-const TEXT_MAX_CHARS = 16;
+// The device's visual capacity is not a 16-code-point limit: real-device
+// testing shows approximately 32 half-width units or 16 CJK units. Keep the
+// old value only as a compatibility/reference constant for older callers.
+const LEGACY_TEXT_MAX_CHARS = 16;
+const TEXT_MAX_CHARS = LEGACY_TEXT_MAX_CHARS;
+// Conservative UTF-8 text budget used by the production builder. The full
+// 64-byte frame capacity is exported separately for protocol diagnostics.
 const TEXT_MAX_BYTES = 48;
+const HID_TEXT_BYTE_CAPACITY = PACKET_LENGTH - 6 - 2 - 1;
 
 module.exports = {
   VENDOR_ID,
@@ -47,6 +54,8 @@ module.exports = {
   CMD_TEXT_SET,
   CMD_PIXEL_SETTING,
   LAYOUTS,
+  LEGACY_TEXT_MAX_CHARS,
   TEXT_MAX_CHARS,
-  TEXT_MAX_BYTES
+  TEXT_MAX_BYTES,
+  HID_TEXT_BYTE_CAPACITY
 };

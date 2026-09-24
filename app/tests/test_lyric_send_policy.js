@@ -88,12 +88,12 @@ async function main() {
     assert.equal(pipeline.sentCount, 1);
   });
 
-  await test('case2: same lyric heartbeat does not resend pages', async () => {
+  await test('case2: same lyric heartbeat does not restart ticker windows', async () => {
     const halo = createHaloMock();
     const { pipeline, advance } = createPipeline(halo, 0);
     assert.equal((await pipeline.handleLyric({ text: 'A' })).action, 'sent');
     advance(10_000);
-    // Soda re-posts the same current line — must NOT replay Halo pages.
+    // Soda re-posts the same current line — must NOT restart Halo windows.
     const again = await pipeline.handleLyric({ text: 'A' });
     assert.equal(again.action, 'dedupe');
     assert.equal(again.reason, 'same-displayed-text');

@@ -16,7 +16,9 @@ const {
 const {
   PACKET_LENGTH,
   TEXT_MAX_BYTES,
-  TEXT_MAX_CHARS
+  TEXT_MAX_CHARS,
+  LEGACY_TEXT_MAX_CHARS,
+  HID_TEXT_BYTE_CAPACITY
 } = require(path.join(__dirname, '..', 'src', 'halo', 'constants'));
 
 let passed = 0;
@@ -67,6 +69,16 @@ test('text packet header matches reference (Celia)', () => {
   assert.equal(packet.subarray(8, 13).toString('utf8'), 'Celia');
 });
 
+test('ASCII text is no longer capped at the legacy 16-code-point value', () => {
+  const text = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef';
+  const packet = buildTextPacket(text);
+  const payloadLength = packet[7];
+  assert.equal(LEGACY_TEXT_MAX_CHARS, 16);
+  assert.equal(TEXT_MAX_CHARS, LEGACY_TEXT_MAX_CHARS);
+  assert.equal(payloadLength, text.length);
+  assert.equal(packet.subarray(8, 8 + payloadLength).toString('utf8'), text);
+});
+
 test('text packet checksum is sum from 0xAA', () => {
   const packet = buildTextPacket('Celia');
   // payload length 7 -> checksum at index 13
@@ -106,16 +118,15 @@ test('UTF-8 Chinese long text is truncated without mojibake', () => {
   assert.equal(decoded, '宝宝'.repeat(8)); // 16 chars * 3 bytes = 48
 });
 
-test('overlong mixed text respects char and byte limits', () => {
+test('overlong CJK text respects the UTF-8 byte budget', () => {
   const text = '一二三四五六七八九十壹贰叁肆伍陆柒捌玖拾中文歌词测试';
   const bytes = truncateUtf8(text);
-  const chars = Array.from(bytes.toString('utf8'));
   assert.ok(bytes.length <= TEXT_MAX_BYTES);
-  assert.ok(chars.length <= TEXT_MAX_CHARS);
   assert.equal(
     bytes.toString('utf8'),
-    Array.from(text.trim()).slice(0, TEXT_MAX_CHARS).join('')
+    Array.from(text.trim()).slice(0, 16).join('')
   );
+  assert.equal(HID_TEXT_BYTE_CAPACITY, 55);
 });
 
 test('empty / whitespace text throws', () => {

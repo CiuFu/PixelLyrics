@@ -15,9 +15,9 @@ const {
   CMD_TEXT_SET,
   CMD_PIXEL_SETTING,
   LAYOUTS,
-  TEXT_MAX_CHARS,
   TEXT_MAX_BYTES
 } = require('./constants');
+const { segmentGraphemes } = require('./lyrics-layout');
 
 class HaloPacketError extends Error {
   constructor(message) {
@@ -64,7 +64,7 @@ function edifierPacket(command, payload) {
   return padPacket(Buffer.concat([withoutChecksum, Buffer.from([sum])]));
 }
 
-function truncateUtf8(text, maxChars = TEXT_MAX_CHARS, maxBytes = TEXT_MAX_BYTES) {
+function truncateUtf8(text, maxChars = Infinity, maxBytes = TEXT_MAX_BYTES) {
   if (typeof text !== 'string') {
     throw new HaloPacketError('Text must be a string');
   }
@@ -72,22 +72,25 @@ function truncateUtf8(text, maxChars = TEXT_MAX_CHARS, maxBytes = TEXT_MAX_BYTES
   if (!working) {
     throw new HaloPacketError('Text cannot be empty');
   }
-  working = Array.from(working).slice(0, maxChars).join('');
+  let graphemes = segmentGraphemes(working);
+  if (Number.isFinite(maxChars)) graphemes = graphemes.slice(0, maxChars);
+  working = graphemes.join('');
   let encoded = Buffer.from(working, 'utf8');
   while (encoded.length > maxBytes) {
-    const chars = Array.from(working);
-    if (chars.length <= 1) {
+    if (graphemes.length <= 1) {
       throw new HaloPacketError('Text cannot fit within UTF-8 byte limit');
     }
-    chars.pop();
-    working = chars.join('');
+    graphemes.pop();
+    working = graphemes.join('');
     encoded = Buffer.from(working, 'utf8');
   }
   return encoded;
 }
 
 function buildTextPacket(text) {
-  // Color is a separate 0xEF pixel-setting concern; 0xE8 carries UTF-8 text only.
+  // Color is a separate 0xEF pixel-setting concern; 0xE8 carries UTF-8 text
+  // only. The visual 32-unit layout is handled before this layer; this
+  // builder only enforces the UTF-8/frame safety boundary.
   const textBytes = truncateUtf8(text);
   return edifierPacket(CMD_TEXT_SET, [0x00, textBytes.length, ...textBytes]);
 }
