@@ -666,22 +666,25 @@ function rebuildTrayMenu() {
   );
 }
 
+function loadAppIcon() {
+  try {
+    return nativeImage.createFromBuffer(
+      fs.readFileSync(path.join(__dirname, '..', 'assets', 'pixellyrics.png'))
+    );
+  } catch {
+    return nativeImage.createEmpty();
+  }
+}
+
 async function createTray() {
   if (tray) return tray;
-  let icon = nativeImage.createEmpty();
-  try {
-    icon = await app.getFileIcon(process.execPath, { size: 'small' });
-    if (!icon || icon.isEmpty()) {
-      // Fallback 16x16 solid blue PNG.
-      icon = nativeImage.createFromBuffer(
-        Buffer.from(
-          'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAHUlEQVQ4jWNgGAWjYBSMglEwCkbBKBgFo2AUAAAGQAABsWMYswAAAABJRU5ErkJggg==',
-          'base64'
-        )
-      );
+  let icon = loadAppIcon();
+  if (icon.isEmpty()) {
+    try {
+      icon = await app.getFileIcon(process.execPath, { size: 'small' });
+    } catch {
+      // Keep an empty icon only if Windows cannot provide the executable icon.
     }
-  } catch {
-    icon = nativeImage.createEmpty();
   }
   try {
     tray = new Tray(icon.resize({ width: 16, height: 16 }));
@@ -700,6 +703,7 @@ function createWindow() {
     width: 720,
     height: 560,
     backgroundColor: '#0b0d12',
+    icon: loadAppIcon(),
     title: 'PixelLyrics',
     autoHideMenuBar: true,
     webPreferences: {

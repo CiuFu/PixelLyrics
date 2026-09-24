@@ -71,7 +71,7 @@ npm.cmd run test:soda-bridge -- --reconnect
 
 | 操作 | 行为 |
 |---|---|
-| 点击窗口 **X** | 主题化确认框：**「关闭应用程序将会还原花在的显示模式」** |
+| 点击窗口 **X** | 根据主界面的关闭设置退出、最小化到托盘或每次询问 |
 | UI / 托盘 **退出 PixelLyrics** | 恢复接管前 Halo 模式（采集到的 scene；未知则回退时钟）并断开 HID |
 
 ## 构建与发布
@@ -82,10 +82,7 @@ npm ci
 npm run build
 ```
 
-产物：`app/dist/`
-
-- `PixelLyrics-Setup-<version>.exe`（NSIS）  
-- `PixelLyrics-portable-<version>.exe`  
+产物：`app/dist/PixelLyrics-Setup-<version>.exe`（NSIS 安装器）
 
 原生模块（`node-hid`、`windows-media-sessions`）通过 `asarUnpack` 解包。
 

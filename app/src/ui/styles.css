@@ -548,9 +548,15 @@ body {
   max-width: 150px;
   padding: 8px 10px;
   color: var(--text);
+  color-scheme: dark;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 9px;
+}
+
+#close-behavior option {
+  color: var(--text);
+  background: #151a29;
 }
 
 .toggle-name {

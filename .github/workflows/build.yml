@@ -37,7 +37,7 @@ jobs:
 
       - name: List dist artifacts
         run: |
-          Get-ChildItem -Path dist -Recurse | Select-Object FullName, Length
+          Get-ChildItem -Path dist -Filter PixelLyrics-Setup-*.exe -File | Select-Object FullName, Length
         shell: pwsh
 
       - name: Upload build artifacts
@@ -45,9 +45,7 @@ jobs:
         with:
           name: PixelLyrics-windows
           if-no-files-found: error
-          path: |
-            app/dist/*.exe
-            app/dist/**/*.exe
+          path: app/dist/PixelLyrics-Setup-*.exe
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -57,9 +55,6 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
-          files: |
-            app/dist/PixelLyrics-Setup-*.exe
-            app/dist/PixelLyrics-portable-*.exe
-            app/dist/**/*.exe
+          files: app/dist/PixelLyrics-Setup-*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

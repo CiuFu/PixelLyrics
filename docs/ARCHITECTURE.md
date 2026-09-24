@@ -81,7 +81,7 @@ checksum: sum(bytes from 0xAA) & 0xFF
 ## 构建
 
 - 开发：`npm.cmd run start:utf8`  
-- 打包：`npm run build` → NSIS + portable；`asarUnpack` 含 `node-hid`、`windows-media-sessions`  
+- 打包：`npm run build` → NSIS 安装器；`asarUnpack` 含 `node-hid`、`windows-media-sessions`
 - CI：`.github/workflows/build.yml`，tag `v*` 触发 Release  
 
 ## 参考项目（refs/）
