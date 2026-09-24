@@ -60,6 +60,7 @@ let mediaMonitor = null;
 let shuttingDown = false;
 let isQuitting = false;
 const lifecycle = createAppLifecycle();
+const INSTRUMENTAL_TEXT = '纯音乐，请欣赏';
 
 const runtime = {
   startedAt: null,
@@ -68,6 +69,7 @@ const runtime = {
   haloDevice: null,
   // Preview state — updated ONLY from pipeline events.
   currentLyric: '',
+  instrumental: false,
   displayStatus: 'idle',
   displayLyricHint: '',
   lastEvent: null,
@@ -112,6 +114,7 @@ function getStatus() {
       : null,
     // Pipeline final preview only — never raw soda payload text.
     currentLyric: runtime.currentLyric,
+    instrumental: runtime.instrumental,
     lyricHint:
       runtime.currentLyric
         ? ''
@@ -156,6 +159,9 @@ function getStatus() {
 
 function pushLyricEvent(event) {
   runtime.lastEvent = event;
+  if (['lyric-updated', 'track-info', 'track-changed'].includes(event.type)) {
+    runtime.instrumental = false;
+  }
   runtime.displayStatus = event.status || event.type;
   if (event.type === 'lyric-updated') {
     // Real lyric line (same content Halo shows for lyrics).
@@ -185,7 +191,17 @@ function pushStatus() {
 
 function setSodaStatus(status) {
   runtime.sodaStatus = String(status || '');
+  if (runtime.sodaStatus.includes('纯音乐')) {
+    runtime.instrumental = true;
+  } else if (runtime.instrumental) {
+    runtime.instrumental = false;
+    runtime.displayLyricHint = '';
+  }
   pushStatus();
+}
+
+function isInstrumentalHint(hint) {
+  return String(hint || '').includes('纯音乐');
 }
 
 /**
@@ -265,7 +281,8 @@ function startServices() {
     },
     onReconnect: (device) => {
       // Optional restore: resend current lyric after HID is back.
-      const restore = runtime.currentLyric;
+      const restore = runtime.currentLyric ||
+        (runtime.instrumental ? INSTRUMENTAL_TEXT : '');
       if (restore && runtime.display) {
         console.log('[halo] restore lyric after reconnect:', restore);
         Promise.resolve(runtime.display.sendText(restore)).catch((error) => {
@@ -407,6 +424,20 @@ function startServices() {
         translation: payload.translation,
         hint: payload.hint
       }));
+      if (!payload.text && isInstrumentalHint(payload.hint)) {
+        runtime.instrumental = true;
+        runtime.currentLyric = '';
+        runtime.displayLyricHint = INSTRUMENTAL_TEXT;
+        Promise.resolve(runtime.display.sendText(INSTRUMENTAL_TEXT)).catch((error) => {
+          console.log('[halo] pure-music hint send failed:', error.message);
+        });
+        pushStatus();
+        return;
+      }
+      if (payload.text) {
+        runtime.instrumental = false;
+        runtime.displayLyricHint = '';
+      }
       console.log('[pipeline] lyric received');
       // Mark ownership as soon as a lyric line arrives (don't wait for cyclic loop end).
       if (haloOwnership && payload && payload.text) {

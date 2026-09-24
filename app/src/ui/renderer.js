@@ -91,13 +91,17 @@ function renderHero(status, event) {
   const titleNode = el('track-title');
   const artistNode = el('track-artist');
   const lyricNode = el('current-lyric');
+  const captionNode = document.querySelector('.lyric-caption');
   const statusNode = el('display-status');
 
   let track = status?.currentTrack || null;
   let lyricText = status?.currentLyric || '';
   let mode = 'idle';
 
-  if (event) {
+  if (status?.instrumental) {
+    lyricText = '纯音乐，请欣赏';
+    mode = 'instrumental';
+  } else if (event) {
     if (event.track) track = event.track;
     if (event.type === 'lyric-updated' && event.text) {
       lyricText = event.text;
@@ -121,18 +125,25 @@ function renderHero(status, event) {
   if (mode === 'idle') {
     if (titleNode) titleNode.textContent = '正在播放';
     if (artistNode) artistNode.textContent = '等待歌曲信息';
+  } else if (mode === 'instrumental' && !formatted) {
+    if (titleNode) titleNode.textContent = '纯音乐';
+    if (artistNode) artistNode.textContent = '无歌词内容';
   } else if (formatted) {
     if (titleNode) titleNode.textContent = formatted.title;
     if (artistNode) artistNode.textContent = formatted.artist;
   }
 
   if (statusNode) {
-    if (mode === 'playing') statusNode.textContent = '正在播放';
+    if (mode === 'instrumental') statusNode.textContent = '纯音乐';
+    else if (mode === 'playing') statusNode.textContent = '正在播放';
     else if (mode === 'track-only') statusNode.textContent = '切歌曲目';
     else statusNode.textContent = status?.displayStatusLabel || '等待音乐播放';
   }
 
-  const showPlaying = mode === 'playing' && Boolean(lyricText);
+  if (captionNode) {
+    captionNode.textContent = mode === 'instrumental' ? '纯音乐提示' : '当前歌词';
+  }
+  const showPlaying = ['playing', 'instrumental'].includes(mode) && Boolean(lyricText);
   if (hero) hero.dataset.state = showPlaying ? 'playing' : 'idle';
   if (idle) idle.classList.toggle('hidden', showPlaying);
   if (playing) playing.classList.toggle('hidden', !showPlaying);
@@ -155,14 +166,24 @@ function renderDeviceStatus(status) {
   setPill(el('soda-pill'), sodaTone === 'ok' ? '正常' : sodaTone === 'err' ? '异常' : '待命', sodaTone);
   setPill(el('halo-pill'), haloTone === 'ok' ? '已连接' : haloTone === 'err' ? '异常' : '等待设备', haloTone);
 
-  const lyricActive = Boolean(status?.currentLyric) || status?.displayStatusLabel === '播放';
+  const lyricActive = Boolean(status?.instrumental) || Boolean(status?.currentLyric) || status?.displayStatusLabel === '播放';
   const bridgeOn = Boolean(status?.bridge?.enabled);
-  const syncText = lyricActive ? '实时同步中' : bridgeOn ? '桥接已就绪' : '等待数据';
+  const syncText = status?.instrumental
+    ? '纯音乐提示已同步'
+    : lyricActive
+      ? '实时同步中'
+      : bridgeOn
+        ? '桥接已就绪'
+        : '等待数据';
   const syncTone = lyricActive ? 'ok' : bridgeOn ? 'ok' : 'warn';
   const syncNode = el('sync-status');
   if (syncNode) syncNode.textContent = syncText;
   setTone(el('sync-icon'), syncTone);
-  setPill(el('sync-pill'), lyricActive ? '实时' : bridgeOn ? '就绪' : '空闲', syncTone);
+  setPill(
+    el('sync-pill'),
+    status?.instrumental ? '已同步' : lyricActive ? '实时' : bridgeOn ? '就绪' : '空闲',
+    syncTone
+  );
 
   const hint = el('soda-run-hint');
   if (hint) hint.textContent = status?.sodaRunningHint || '';
