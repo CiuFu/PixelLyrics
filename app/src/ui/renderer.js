@@ -251,20 +251,41 @@ function bindHideDesktopLyrics() {
   });
 }
 
+function bindCloseBehavior() {
+  const select = el('close-behavior');
+  if (!select || !window.pixellyrics) return;
+  window.pixellyrics.getStatus().then((status) => {
+    if (['ask', 'quit', 'minimize'].includes(status?.closeBehavior)) {
+      select.value = status.closeBehavior;
+    }
+  }).catch(() => {});
+  select.addEventListener('change', () => {
+    if (typeof window.pixellyrics.setCloseBehavior === 'function') {
+      window.pixellyrics.setCloseBehavior(select.value).catch(() => {});
+    }
+  });
+}
+
 function bindConfirmModal() {
   const root = el('confirm-modal');
   const okBtn = el('confirm-ok');
   const cancelBtn = el('confirm-cancel');
+  const minimizeBtn = el('confirm-minimize');
+  const rememberRow = el('remember-choice-row');
+  const rememberBox = el('remember-close-choice');
   const backdrop = el('confirm-backdrop');
   const titleNode = el('confirm-title');
   const messageNode = el('confirm-message');
   const detailNode = el('confirm-detail');
   if (!root || !okBtn || !cancelBtn) return;
 
-  const sendResult = (confirmed) => {
+  const sendResult = (action) => {
     root.classList.add('hidden');
     if (typeof window.pixellyrics?.confirmCloseResult === 'function') {
-      window.pixellyrics.confirmCloseResult(Boolean(confirmed)).catch(() => {});
+      window.pixellyrics.confirmCloseResult({
+        action,
+        remember: Boolean(rememberBox?.checked)
+      }).catch(() => {});
     }
   };
 
@@ -276,15 +297,20 @@ function bindConfirmModal() {
     if (detailNode && payload?.detail) detailNode.textContent = payload.detail;
     if (okBtn && payload?.confirmText) okBtn.textContent = payload.confirmText;
     if (cancelBtn && payload?.cancelText) cancelBtn.textContent = payload.cancelText;
+    if (minimizeBtn && payload?.minimizeText) minimizeBtn.textContent = payload.minimizeText;
+    if (rememberBox) rememberBox.checked = false;
+    rememberRow?.classList.toggle('hidden', !payload?.minimizeText);
+    minimizeBtn?.classList.toggle('hidden', !payload?.minimizeText);
     root.classList.remove('hidden');
   };
 
-  okBtn.addEventListener('click', () => sendResult(true));
-  cancelBtn.addEventListener('click', () => sendResult(false));
-  if (backdrop) backdrop.addEventListener('click', () => sendResult(false));
+  okBtn.addEventListener('click', () => sendResult('quit'));
+  cancelBtn.addEventListener('click', () => sendResult('cancel'));
+  minimizeBtn?.addEventListener('click', () => sendResult('minimize'));
+  if (backdrop) backdrop.addEventListener('click', () => sendResult('cancel'));
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && !root.classList.contains('hidden')) {
-      sendResult(false);
+      sendResult('cancel');
     }
   });
 
@@ -310,14 +336,23 @@ function bindActions() {
         const detailNode = el('confirm-detail');
         const okBtn = el('confirm-ok');
         const cancelBtn = el('confirm-cancel');
-        if (titleNode) titleNode.textContent = '退出 PixelLyrics';
-        if (messageNode) messageNode.textContent = '关闭应用程序将会还原花在的显示模式';
+        const minimizeBtn = el('confirm-minimize');
+        const rememberRow = el('remember-choice-row');
+        const rememberBox = el('remember-close-choice');
+        if (titleNode) titleNode.textContent = '关闭 PixelLyrics';
+        if (messageNode) messageNode.textContent = '请选择关闭方式';
         if (detailNode) {
           detailNode.textContent =
-            '确认后将停止歌词同步，并恢复 Halo 接管前的显示（读到的 scene；未知时回退时钟）。';
+            '退出会停止歌词同步并恢复 Halo 接管前的显示；最小化后会继续在后台同步。';
         }
         if (okBtn) okBtn.textContent = '退出并还原';
         if (cancelBtn) cancelBtn.textContent = '取消';
+        if (minimizeBtn) {
+          minimizeBtn.textContent = '最小化到托盘';
+          minimizeBtn.classList.remove('hidden');
+        }
+        if (rememberRow) rememberRow.classList.remove('hidden');
+        if (rememberBox) rememberBox.checked = false;
         root.classList.remove('hidden');
         return;
       }
@@ -361,6 +396,7 @@ if (window.pixellyrics) {
 }
 
 bindHideDesktopLyrics();
+bindCloseBehavior();
 bindConfirmModal();
 bindActions();
 refresh();

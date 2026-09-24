@@ -544,6 +544,15 @@ body {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+#close-behavior {
+  max-width: 150px;
+  padding: 8px 10px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+}
+
 .toggle-name {
   font-size: 14px;
   font-weight: 600;
@@ -725,10 +734,29 @@ body {
   color: var(--muted);
 }
 
+.remember-choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.remember-choice input {
+  accent-color: var(--accent);
+}
+
 .modal-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+}
+
+.modal-actions .btn {
+  padding: 10px 6px;
+  font-size: 12px;
 }
 
 @keyframes modal-in {

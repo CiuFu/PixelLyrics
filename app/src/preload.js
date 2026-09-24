@@ -14,10 +14,12 @@ contextBridge.exposeInMainWorld('pixellyrics', {
   onConfirmClose: (handler) => {
     ipcRenderer.on('confirm-close', (_event, payload) => handler(payload));
   },
-  confirmCloseResult: (confirmed) =>
-    ipcRenderer.invoke('confirm-close-result', Boolean(confirmed)),
+  confirmCloseResult: (result) =>
+    ipcRenderer.invoke('confirm-close-result', result),
   getHideDesktopLyrics: () => ipcRenderer.invoke('get-hide-desktop-lyrics'),
   setHideDesktopLyrics: (enabled) =>
     ipcRenderer.invoke('set-hide-desktop-lyrics', Boolean(enabled)),
+  setCloseBehavior: (behavior) =>
+    ipcRenderer.invoke('set-close-behavior', behavior),
   quitApp: () => ipcRenderer.invoke('quit-app')
 });

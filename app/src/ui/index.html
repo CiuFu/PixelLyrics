@@ -117,6 +117,17 @@
               <span class="switch-label" id="hide-lyrics-state">ON</span>
             </label>
           </div>
+          <div class="toggle-row close-behavior-row">
+            <div class="toggle-copy">
+              <div class="toggle-name">关闭窗口时</div>
+              <div class="toggle-desc">可退出应用或收起到系统托盘</div>
+            </div>
+            <select id="close-behavior" aria-label="关闭窗口时的行为">
+              <option value="ask">每次询问</option>
+              <option value="quit">直接退出</option>
+              <option value="minimize">最小化到托盘</option>
+            </select>
+          </div>
           <div class="toggle-row">
             <div class="toggle-copy">
               <div class="toggle-name">歌词同步</div>
@@ -140,7 +151,7 @@
           <button id="quit-app" type="button" class="btn btn-danger">
             退出 PixelLyrics
           </button>
-          <div class="action-note">关闭窗口也会确认退出，并还原花在显示</div>
+          <div class="action-note">关闭行为可在上方设置</div>
         </div>
       </section>
 
@@ -156,8 +167,13 @@
         <p class="modal-detail" id="confirm-detail">
           确认后将停止歌词同步，并恢复 Halo 接管前的显示。
         </p>
+        <label class="remember-choice hidden" id="remember-choice-row">
+          <input type="checkbox" id="remember-close-choice" />
+          <span>记住我的选择，下次不再询问</span>
+        </label>
         <div class="modal-actions">
           <button type="button" class="btn btn-secondary" id="confirm-cancel">取消</button>
+          <button type="button" class="btn btn-secondary hidden" id="confirm-minimize">最小化到托盘</button>
           <button type="button" class="btn btn-danger" id="confirm-ok">退出并还原</button>
         </div>
       </div>

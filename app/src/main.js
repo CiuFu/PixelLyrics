@@ -73,6 +73,7 @@ const runtime = {
   lastEvent: null,
   mediaAvailable: false,
   hideDesktopLyrics: true,
+  closeBehavior: 'ask',
   lyricsPaused: false,
   sodaRunning: null,
   sodaRunningHint: '',
@@ -133,6 +134,7 @@ function getStatus() {
       : null,
     mediaAvailable: runtime.mediaAvailable,
     hideDesktopLyrics: runtime.hideDesktopLyrics,
+    closeBehavior: runtime.closeBehavior,
     sodaRunning: runtime.sodaRunning,
     sodaRunningHint: runtime.sodaRunningHint,
     appState: lifecycle.getState(),
@@ -429,6 +431,7 @@ function startServices() {
 
   sodaService.setEnabled(true);
   // Hide Soda desktop-lyrics window visuals only; do NOT disable the feature.
+  runtime.closeBehavior = loadCloseBehavior(userDataPath);
   applyHideDesktopLyrics(loadHideDesktopLyrics(userDataPath));
   startSodaRunningPoll();
   console.log('[diag] soda enabled=', sodaService.enabled, 'userData=', userDataPath);
@@ -480,12 +483,28 @@ function loadHideDesktopLyrics(userDataPath) {
   }
 }
 
+function loadCloseBehavior(userDataPath) {
+  try {
+    const data = JSON.parse(
+      fs.readFileSync(hideDesktopLyricsSettingsPath(userDataPath), 'utf8')
+    );
+    return ['ask', 'quit', 'minimize'].includes(data.closeBehavior)
+      ? data.closeBehavior
+      : 'ask';
+  } catch {
+    return 'ask';
+  }
+}
+
 function saveHideDesktopLyrics(userDataPath, enabled) {
   try {
     const p = hideDesktopLyricsSettingsPath(userDataPath);
     fs.writeFileSync(
       p,
-      JSON.stringify({ hideDesktopLyrics: Boolean(enabled) }, null, 2),
+      JSON.stringify({
+        hideDesktopLyrics: Boolean(enabled),
+        closeBehavior: runtime.closeBehavior
+      }, null, 2),
       'utf8'
     );
   } catch (error) {
@@ -535,11 +554,18 @@ function requestAppQuit(reason = 'quit') {
 let windowCloseDialogOpen = false;
 
 /**
- * Window X: themed in-app confirm modal (not native OS dialog).
- * Confirm → true quit + Halo restore; cancel → keep app running.
+ * Window X: apply the saved policy or ask whether to quit or hide to tray.
  */
 function confirmWindowCloseAndQuit() {
   if (isQuitting || windowCloseDialogOpen) return;
+  if (runtime.closeBehavior === 'quit') {
+    requestAppQuit('window-close-setting');
+    return;
+  }
+  if (runtime.closeBehavior === 'minimize') {
+    hideMainWindow();
+    return;
+  }
   const win =
     mainWindow && !mainWindow.isDestroyed()
       ? mainWindow
@@ -554,21 +580,34 @@ function confirmWindowCloseAndQuit() {
   console.log('[main] window close — ask UI confirm (themed modal)');
   win.webContents.send('confirm-close', {
     reason: 'window-close',
-    title: '退出 PixelLyrics',
-    message: '关闭应用程序将会还原花在的显示模式',
+    title: '关闭 PixelLyrics',
+    message: '请选择关闭方式',
     detail:
-      '确认后将停止歌词同步，并恢复 Halo 接管前的显示（读到的 scene；未知时回退时钟）。',
+      '退出会停止歌词同步并恢复 Halo 接管前的显示；最小化后会继续在后台同步。',
     confirmText: '退出并还原',
-    cancelText: '取消'
+    cancelText: '取消',
+    minimizeText: '最小化到托盘'
   });
 }
 
-ipcMain.handle('confirm-close-result', (_event, confirmed) => {
+ipcMain.handle('confirm-close-result', (_event, result) => {
   windowCloseDialogOpen = false;
-  if (confirmed) {
+  const action = typeof result === 'boolean'
+    ? (result ? 'quit' : 'cancel')
+    : result?.action;
+  if (result?.remember && ['quit', 'minimize'].includes(action)) {
+    runtime.closeBehavior = action;
+    saveHideDesktopLyrics(app.getPath('userData'), runtime.hideDesktopLyrics);
+    pushStatus();
+  }
+  if (action === 'quit') {
     console.log('[main] close confirm OK — quit and restore Halo');
     requestAppQuit('window-close');
     return { quit: true };
+  }
+  if (action === 'minimize') {
+    hideMainWindow();
+    return { quit: false, hidden: true };
   }
   console.log('[main] close confirm cancelled — keep running');
   return { quit: false };
@@ -704,6 +743,15 @@ ipcMain.handle('set-hide-desktop-lyrics', (_event, enabled) => {
   const userDataPath = app.getPath('userData');
   saveHideDesktopLyrics(userDataPath, next);
   return { hideDesktopLyrics: next };
+});
+ipcMain.handle('set-close-behavior', (_event, behavior) => {
+  if (!['ask', 'quit', 'minimize'].includes(behavior)) {
+    return { closeBehavior: runtime.closeBehavior };
+  }
+  runtime.closeBehavior = behavior;
+  saveHideDesktopLyrics(app.getPath('userData'), runtime.hideDesktopLyrics);
+  pushStatus();
+  return { closeBehavior: runtime.closeBehavior };
 });
 
 app.whenReady().then(async () => {

@@ -1,6 +1,6 @@
 {
   "name": "pixellyrics",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": false,
   "description": "Windows: SodaMusic live lyrics on EDIFIER Halo PixelBar (unofficial community project).",
   "main": "src/main.js",

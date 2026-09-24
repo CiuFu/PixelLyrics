@@ -56,7 +56,7 @@
 4. **Halo 文本帧**最多携带 48 UTF-8 字节；布局另按约 32 个半角显示单位（约 16 个中文字符）分窗，长句由 DisplayStrategy 软件 ticker 发送，不依赖设备滚动。
 5. **UI 歌词** 只消费 Pipeline 事件；`track-info` 不得当作歌词行。  
 6. **切歌**：Halo 先显示「歌名 - 歌手」（center），无 `♪`；新歌词覆盖。  
-7. **退出**：窗口 X / UI 退出 → 主题确认 → `HaloOwnership.release()` → 还原接管前 scene（未知则 clock fallback）。  
+7. **退出/托盘**：窗口 X 默认询问退出或最小化到托盘；可在主界面设置固定行为，也可在询问框记住选择。退出走 `HaloOwnership.release()`，还原接管前 scene（未知则 clock fallback）；最小化时歌词同步继续。
 8. **启动** 不自动拉起汽水；仅检测进程并提示打开桌面歌词。
 
 ## HID 要点
