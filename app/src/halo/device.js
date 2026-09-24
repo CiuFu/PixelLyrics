@@ -1,5 +1,5 @@
 // Halo PixelBar HID discovery, write path, and auto-reconnect (M5.2).
-// Protocol/packets unchanged. Only connection lifecycle + status logging.
+// HID connection lifecycle, packet sending, and auto-reconnect.
 'use strict';
 
 const nodeHid = require('node-hid');
@@ -20,6 +20,10 @@ const {
   buildPixelStateQueryPacket,
   parsePixelStateResponse
 } = require('./packets');
+const {
+  buildLyricAnimationPresetPacket,
+  buildLyricAnimationSwitchPacket
+} = require('./ec-packets');
 
 const DEFAULT_RECONNECT_INTERVAL_MS = 2000;
 
@@ -389,6 +393,20 @@ class HaloClient {
     };
   }
 
+  setLyricAnimationPreset(preset, options = {}) {
+    const rgb = options.rgb || this.defaultRgb;
+    const packet = buildLyricAnimationPresetPacket(preset, rgb);
+    const result = this.sendPacket(packet);
+    return { ...result, preset, rgb, packet };
+  }
+
+  setLyricAnimationEnabled(enabled, options = {}) {
+    const rgb = options.rgb || this.defaultRgb;
+    const packet = buildLyricAnimationSwitchPacket(enabled, rgb);
+    const result = this.sendPacket(packet);
+    return { ...result, enabled, rgb, packet };
+  }
+
   /**
    * Restore Halo built-in scene (clock/game/...). Uses TempoHub 0xEF scene packet.
    */
@@ -508,6 +526,26 @@ function sendText(text, options = {}) {
   }
 }
 
+function setLyricAnimationPreset(preset, options = {}) {
+  const client = new HaloClient(options);
+  try {
+    return client.setLyricAnimationPreset(preset, options);
+  } finally {
+    client.stopReconnect();
+    client.disconnect();
+  }
+}
+
+function setLyricAnimationEnabled(enabled, options = {}) {
+  const client = new HaloClient(options);
+  try {
+    return client.setLyricAnimationEnabled(enabled, options);
+  } finally {
+    client.stopReconnect();
+    client.disconnect();
+  }
+}
+
 module.exports = {
   HaloDeviceError,
   enumerateHaloDevices,
@@ -516,6 +554,8 @@ module.exports = {
   HaloClient,
   sendPackets,
   sendText,
+  setLyricAnimationPreset,
+  setLyricAnimationEnabled,
   EDIFIER_DEVICE_TYPE,
   DEFAULT_RECONNECT_INTERVAL_MS
 };

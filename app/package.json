@@ -19,6 +19,8 @@
     "build": "electron-builder --win",
     "dist": "electron-builder --win nsis portable",
     "test:halo-packets": "node tests/test_halo_packets.js",
+    "test:halo-lyric-animation": "node tests/test_halo_lyric_animation.js",
+    "diagnose:halo-animation-matrix": "node tests/diagnose_halo_animation_matrix.js",
     "test:halo-device": "node tests/test_halo_device.js",
     "test:soda-bridge": "node tests/test_soda_bridge.js",
     "test:lyrics": "node tests/test_lyric_pipeline.js",
